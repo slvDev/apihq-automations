@@ -1,0 +1,204 @@
+{
+  "name": "Google Play reviews monitor (apihq skeleton)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days"
+            }
+          ]
+        }
+      },
+      "id": "trigger",
+      "name": "Every day",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/apihq~google-play-reviews-scraper/run-sync-get-dataset-items",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_APIFY_TOKEN"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"appIds\": [\n    \"com.spotify.music\"\n  ],\n  \"maxReviews\": 100,\n  \"sort\": \"newest\",\n  \"country\": \"us\",\n  \"language\": \"en\"\n}",
+        "options": {}
+      },
+      "id": "get-new-reviews",
+      "name": "Get new reviews",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        430,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "success-check",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "split-by-success",
+      "name": "Split by success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "app_id",
+              "value": "={{ $json.app_id }}",
+              "type": "string"
+            },
+            {
+              "id": "a1",
+              "name": "rating",
+              "value": "={{ $json.rating }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "text",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "review-row",
+      "name": "Review row",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "app_id",
+              "value": "={{ $json.app_id }}",
+              "type": "string"
+            },
+            {
+              "id": "a1",
+              "name": "code",
+              "value": "={{ $json.code }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "request_id",
+              "value": "={{ $json.request_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "failure-row",
+      "name": "Failure row",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Every day": {
+      "main": [
+        [
+          {
+            "node": "Get new reviews",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get new reviews": {
+      "main": [
+        [
+          {
+            "node": "Split by success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split by success": {
+      "main": [
+        [
+          {
+            "node": "Review row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Failure row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

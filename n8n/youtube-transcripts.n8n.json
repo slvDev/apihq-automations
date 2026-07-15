@@ -1,0 +1,196 @@
+{
+  "name": "YouTube transcripts (apihq skeleton)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Run workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/apihq~youtube-transcript-scraper/run-sync-get-dataset-items",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_APIFY_TOKEN"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"videoIds\": [\n    \"jNQXAC9IVRw\",\n    \"dQw4w9WgXcQ\",\n    \"00000000000\"\n  ],\n  \"language\": \"en\",\n  \"metadata\": true\n}",
+        "options": {}
+      },
+      "id": "get-transcripts",
+      "name": "Get transcripts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        430,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "success-check",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "split-by-success",
+      "name": "Split by success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "video_id",
+              "value": "={{ $json.video_id }}",
+              "type": "string"
+            },
+            {
+              "id": "a1",
+              "name": "title",
+              "value": "={{ $json.metadata?.title }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "text",
+              "value": "={{ $json.transcript.map(s => s.text).join(' ') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "transcript-text",
+      "name": "Transcript text",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "video_id",
+              "value": "={{ $json.video_id }}",
+              "type": "string"
+            },
+            {
+              "id": "a1",
+              "name": "code",
+              "value": "={{ $json.code }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "request_id",
+              "value": "={{ $json.request_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "failure-row",
+      "name": "Failure row",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Run workflow": {
+      "main": [
+        [
+          {
+            "node": "Get transcripts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get transcripts": {
+      "main": [
+        [
+          {
+            "node": "Split by success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split by success": {
+      "main": [
+        [
+          {
+            "node": "Transcript text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Failure row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
