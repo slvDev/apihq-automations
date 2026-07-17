@@ -97,7 +97,7 @@
             {
               "id": "a1",
               "name": "rating",
-              "value": "={{ $json.rating }}",
+              "value": "={{ $json.score }}",
               "type": "string"
             },
             {

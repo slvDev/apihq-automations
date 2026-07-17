@@ -89,7 +89,7 @@
             {
               "id": "a1",
               "name": "author",
-              "value": "={{ $json.author }}",
+              "value": "={{ $json.author_name }}",
               "type": "string"
             },
             {
