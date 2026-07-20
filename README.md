@@ -16,6 +16,9 @@ and the run keeps going.
 | [`n8n/play-reviews-monitor.n8n.json`](n8n/play-reviews-monitor.n8n.json) | n8n | Daily pull of an app's newest Google Play reviews, one item per review |
 | [`n8n/play-review-alerts.n8n.json`](n8n/play-review-alerts.n8n.json) | n8n | Daily Slack alerts for 1–2 star Google Play reviews, deduped across runs (at-least-once: the first active run covers the current backlog, and a failed run can repeat alerts) |
 | [`n8n/youtube-comments.n8n.json`](n8n/youtube-comments.n8n.json) | n8n | One video → one item per comment (author, text) |
+| [`make/youtube-transcripts.make.json`](make/youtube-transcripts.make.json) | Make | Video IDs → one bundle per video, transcript and failure rows on separate filtered routes |
+| [`make/play-reviews-monitor.make.json`](make/play-reviews-monitor.make.json) | Make | An app's newest Google Play reviews, one bundle per review (schedule the scenario for a daily snapshot) |
+| [`make/youtube-comments.make.json`](make/youtube-comments.make.json) | Make | One video → one bundle per comment (author, text, likes) |
 
 ## How to use (n8n)
 
@@ -35,6 +38,17 @@ and the run keeps going.
    **save and publish (activate)** the workflow. The Schedule Trigger
    only fires while the workflow is active, and the alert workflow's
    dedup memory only persists on the active workflow.
+
+## How to use (Make)
+
+1. Open a blueprint file from the table above, click **Raw**, and save
+   the file (Make imports blueprints from a file, not a URL).
+2. In the Make scenario editor: **⋯ (More) → Import Blueprint**, pick
+   the saved file.
+3. Open the HTTP module and replace `YOUR_APIFY_TOKEN`; put your own
+   inputs in the request body.
+4. Run once to check the routes, then set the scenario schedule if the
+   job is recurring (the daily review snapshot, for example).
 
 ## Billing
 

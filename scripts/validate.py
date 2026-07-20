@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""Validate every n8n workflow file: JSON parses, required keys exist,
-node names are unique, and every connection references a real node."""
+"""Validate every workflow file. n8n: JSON parses, required keys exist,
+node names are unique, and every connection references a real node.
+Make: JSON parses, flow modules (including router routes) carry id,
+module, and version, and module ids are unique."""
 import json
 import pathlib
 import sys
@@ -62,7 +64,41 @@ for path in files:
 
     print(f"ok    {path}")
 
+make_files = sorted(pathlib.Path("make").glob("*.make.json"))
+
+
+def walk_modules(flow, path, seen_ids):
+    for module in flow:
+        for key in ("id", "module", "version"):
+            if key not in module:
+                fail(f"{path}: module {module.get('id', '?')} missing '{key}'")
+        mid = module.get("id")
+        if mid in seen_ids:
+            fail(f"{path}: duplicate module id {mid}")
+        seen_ids.add(mid)
+        for route in module.get("routes", []):
+            walk_modules(route.get("flow", []), path, seen_ids)
+
+
+for path in make_files:
+    try:
+        data = json.loads(path.read_text())
+    except json.JSONDecodeError as e:
+        fail(f"{path}: invalid JSON ({e})")
+        continue
+    if not data.get("name"):
+        fail(f"{path}: 'name' is required")
+    flow = data.get("flow")
+    if not isinstance(flow, list) or not flow:
+        fail(f"{path}: 'flow' must be a non-empty list")
+        continue
+    if "metadata" not in data:
+        fail(f"{path}: 'metadata' is required")
+    walk_modules(flow, path, set())
+    print(f"ok    {path}")
+
+total = len(files) + len(make_files)
 if failures:
     print(f"\n{failures} problem(s).")
     sys.exit(1)
-print(f"\nAll {len(files)} workflow files valid.")
+print(f"\nAll {total} workflow files valid.")

@@ -1,0 +1,187 @@
+{
+  "name": "YouTube transcripts (apihq skeleton)",
+  "flow": [
+    {
+      "id": 1,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": {
+        "handleErrors": false,
+        "useNewZLibDeCompress": true
+      },
+      "mapper": {
+        "url": "https://api.apify.com/v2/acts/apihq~youtube-transcript-scraper/run-sync-get-dataset-items",
+        "serializeUrl": false,
+        "method": "post",
+        "headers": [
+          {
+            "name": "Authorization",
+            "value": "Bearer YOUR_APIFY_TOKEN"
+          }
+        ],
+        "qs": [],
+        "bodyType": "raw",
+        "parseResponse": true,
+        "timeout": "300",
+        "shareCookies": false,
+        "ca": "",
+        "rejectUnauthorized": true,
+        "followRedirect": true,
+        "useQuerystring": false,
+        "gzip": true,
+        "useMtls": false,
+        "contentType": "application/json",
+        "data": "{\n  \"videoIds\": [\"jNQXAC9IVRw\", \"dQw4w9WgXcQ\", \"00000000000\"],\n  \"language\": \"en\",\n  \"metadata\": true\n}",
+        "followAllRedirects": false
+      },
+      "metadata": {
+        "designer": {
+          "x": 0,
+          "y": 0,
+          "name": "Get transcripts"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "module": "builtin:BasicFeeder",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "array": "{{1.data}}"
+      },
+      "metadata": {
+        "designer": {
+          "x": 300,
+          "y": 0,
+          "name": "One bundle per video"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "module": "builtin:BasicRouter",
+      "version": 1,
+      "parameters": {},
+      "mapper": null,
+      "metadata": {
+        "designer": {
+          "x": 600,
+          "y": 0
+        }
+      },
+      "routes": [
+        {
+          "flow": [
+            {
+              "id": 4,
+              "module": "util:SetVariables",
+              "version": 1,
+              "parameters": {},
+              "filter": {
+                "name": "Transcript rows (billed)",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{2.success}}",
+                      "b": "true",
+                      "o": "boolean:equal"
+                    }
+                  ]
+                ]
+              },
+              "mapper": {
+                "variables": [
+                  {
+                    "name": "video_id",
+                    "value": "{{2.video_id}}"
+                  },
+                  {
+                    "name": "title",
+                    "value": "{{2.metadata.title}}"
+                  },
+                  {
+                    "name": "segments",
+                    "value": "{{2.transcript}}"
+                  }
+                ],
+                "scope": "roundtrip"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 900,
+                  "y": -150,
+                  "name": "Transcript row"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 5,
+              "module": "util:SetVariables",
+              "version": 1,
+              "parameters": {},
+              "filter": {
+                "name": "Failure rows (not billed)",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{2.success}}",
+                      "b": "false",
+                      "o": "boolean:equal"
+                    }
+                  ]
+                ]
+              },
+              "mapper": {
+                "variables": [
+                  {
+                    "name": "video_id",
+                    "value": "{{2.video_id}}"
+                  },
+                  {
+                    "name": "code",
+                    "value": "{{2.code}}"
+                  },
+                  {
+                    "name": "request_id",
+                    "value": "{{2.request_id}}"
+                  }
+                ],
+                "scope": "roundtrip"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 900,
+                  "y": 150,
+                  "name": "Failure row"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "instant": false,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": {
+      "orphans": []
+    }
+  }
+}
