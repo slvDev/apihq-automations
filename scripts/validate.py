@@ -46,13 +46,19 @@ for path in files:
     for source, outputs in connections.items():
         if source not in name_set:
             fail(f"{path}: connection source '{source}' is not a node")
-        for branch in outputs.get("main", []):
-            for target in branch:
-                if target.get("node") not in name_set:
-                    fail(
-                        f"{path}: connection {source} → "
-                        f"{target.get('node')} targets a missing node"
-                    )
+        # Check every connection group (main, ai_languageModel, ai_tool,
+        # …), not just main.
+        for group, branches in outputs.items():
+            if not isinstance(branches, list):
+                fail(f"{path}: connection group '{group}' of '{source}' is not a list")
+                continue
+            for branch in branches:
+                for target in branch or []:
+                    if target.get("node") not in name_set:
+                        fail(
+                            f"{path}: {group} connection {source} → "
+                            f"{target.get('node')} targets a missing node"
+                        )
 
     print(f"ok    {path}")
 

@@ -19,17 +19,19 @@ and the run keeps going.
 
 ## How to use (n8n)
 
-1. Download a workflow file (or clone this repo).
-2. In n8n: **Workflow → Import from File**.
-3. Open the HTTP Request node and replace `YOUR_APIFY_TOKEN` with your
+1. Open a workflow file from the table above (a star helps other
+   builders find these).
+2. Click **Raw** and copy the URL.
+3. In n8n: **Workflow → Import from URL**, paste it.
+4. Open the HTTP Request node and replace `YOUR_APIFY_TOKEN` with your
    token (Apify Console → Settings → API tokens — the free tier works).
    The chained workflows have two actor nodes — replace the token in
    both. The Slack alert workflow additionally needs your incoming
    webhook URL in its last node.
-4. Put your own inputs in the request body and run. Successes and typed
+5. Put your own inputs in the request body and run. Successes and typed
    failures exit on separate branches; wire the last nodes to wherever
    your data lives.
-5. For the scheduled workflows (review monitor and review alerts):
+6. For the scheduled workflows (review monitor and review alerts):
    **save and publish (activate)** the workflow. The Schedule Trigger
    only fires while the workflow is active, and the alert workflow's
    dedup memory only persists on the active workflow.
