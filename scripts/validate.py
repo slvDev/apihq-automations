@@ -2,7 +2,9 @@
 """Validate every workflow file. n8n: JSON parses, required keys exist,
 node names are unique, and every connection references a real node.
 Make: JSON parses, flow modules (including router routes) carry id,
-module, and version, and module ids are unique."""
+module, and version, and module ids are unique. GitHub Actions: YAML
+parses with triggers, jobs, and steps present (actionlint does the deep
+linting in CI)."""
 import json
 import pathlib
 import sys

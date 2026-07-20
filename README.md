@@ -2,9 +2,11 @@
 
 Importable automation workflows built on [apihq](https://apihq.dev)'s
 pay-per-result data actors for YouTube and Google Play. Every workflow
-ships with the failure branch pre-wired: an invalid or unavailable input
-becomes a typed `success: false` row on the false branch — billed $0.0000 —
-and the run keeps going.
+ships with failure handling pre-wired: an invalid or unavailable input
+becomes a typed `success: false` row — billed $0.0000 — and the run
+keeps going. In n8n and Make those rows exit on their own branch or
+filtered route; in the GitHub Actions templates the job summary counts
+delivered vs failed and both stay in the JSON output.
 
 ## What's here
 

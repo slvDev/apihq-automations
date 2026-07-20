@@ -12,6 +12,11 @@ on:
 permissions:
   contents: write
 
+# Schedule and manual runs share one lane so pushes never race.
+concurrency:
+  group: play-reviews-history
+  cancel-in-progress: false
+
 env:
   APP_ID: com.spotify.music
 
@@ -19,7 +24,7 @@ jobs:
   snapshot:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Fetch the newest reviews
         env:
