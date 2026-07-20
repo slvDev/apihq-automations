@@ -32,7 +32,9 @@
         "useMtls": false,
         "contentType": "application/json",
         "data": "{\n  \"videoIds\": [\"jNQXAC9IVRw\", \"dQw4w9WgXcQ\", \"00000000000\"],\n  \"language\": \"en\",\n  \"metadata\": true\n}",
-        "followAllRedirects": false
+        "followAllRedirects": false,
+        "authUser": "",
+        "authPass": ""
       },
       "metadata": {
         "designer": {

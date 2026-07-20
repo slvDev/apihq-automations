@@ -32,7 +32,9 @@
         "useMtls": false,
         "contentType": "application/json",
         "data": "{\n  \"appIds\": [\"com.spotify.music\"],\n  \"maxReviews\": 100,\n  \"sort\": \"newest\",\n  \"country\": \"us\",\n  \"language\": \"en\"\n}",
-        "followAllRedirects": false
+        "followAllRedirects": false,
+        "authUser": "",
+        "authPass": ""
       },
       "metadata": {
         "designer": {

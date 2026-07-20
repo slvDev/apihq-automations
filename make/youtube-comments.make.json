@@ -32,7 +32,9 @@
         "useMtls": false,
         "contentType": "application/json",
         "data": "{\n  \"videoUrls\": [\"dQw4w9WgXcQ\"],\n  \"maxComments\": 200,\n  \"sort\": \"top\",\n  \"includeReplies\": false\n}",
-        "followAllRedirects": false
+        "followAllRedirects": false,
+        "authUser": "",
+        "authPass": ""
       },
       "metadata": {
         "designer": {
