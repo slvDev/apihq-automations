@@ -97,7 +97,42 @@ for path in make_files:
     walk_modules(flow, path, set())
     print(f"ok    {path}")
 
-total = len(files) + len(make_files)
+gha_files = sorted(pathlib.Path("github-actions").glob("*.yml"))
+try:
+    import yaml  # provided by the CI step; on runners/dev machines with PyYAML
+
+    for path in gha_files:
+        try:
+            data = yaml.safe_load(path.read_text())
+        except yaml.YAMLError as e:
+            fail(f"{path}: invalid YAML ({e})")
+            continue
+        if not isinstance(data, dict):
+            fail(f"{path}: not a mapping")
+            continue
+        # PyYAML parses the `on:` key as boolean True (YAML 1.1).
+        if "on" not in data and True not in data:
+            fail(f"{path}: missing 'on' trigger")
+        jobs = data.get("jobs")
+        if not isinstance(jobs, dict) or not jobs:
+            fail(f"{path}: 'jobs' must be a non-empty mapping")
+        else:
+            for job_name, job in jobs.items():
+                steps = job.get("steps")
+                if not isinstance(steps, list) or not steps:
+                    fail(f"{path}: job '{job_name}' has no steps")
+                    continue
+                for step in steps:
+                    if "run" not in step and "uses" not in step:
+                        fail(
+                            f"{path}: job '{job_name}' has a step with "
+                            "neither 'run' nor 'uses'"
+                        )
+        print(f"ok    {path}")
+except ImportError:
+    fail("PyYAML is required to validate github-actions/*.yml (pip install pyyaml)")
+
+total = len(files) + len(make_files) + len(gha_files)
 if failures:
     print(f"\n{failures} problem(s).")
     sys.exit(1)

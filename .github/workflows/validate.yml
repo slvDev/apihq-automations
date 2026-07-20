@@ -10,5 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate workflow JSON and node graphs
+      - name: Install PyYAML
+        run: pip install pyyaml
+      - name: Validate workflow JSON, node graphs, and Actions YAML
         run: python3 scripts/validate.py
+      - name: Lint GitHub Actions templates
+        run: |
+          bash <(curl -sSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint github-actions/*.yml

@@ -1,0 +1,52 @@
+# YouTube transcripts batch — apihq skeleton.
+# Copy into your repo's .github/workflows/ and add an APIFY_TOKEN secret
+# (repo Settings → Secrets and variables → Actions). Billing is per
+# delivered transcript on your Apify account; failed videos are $0 and
+# stay in the dataset as typed success:false rows.
+name: youtube-transcripts
+
+on:
+  workflow_dispatch:
+    inputs:
+      video_ids:
+        description: "YouTube video IDs, comma-separated (up to 50)"
+        required: true
+        default: "jNQXAC9IVRw,dQw4w9WgXcQ,00000000000"
+
+jobs:
+  transcripts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run the transcript batch
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          VIDEO_IDS: ${{ inputs.video_ids }}
+        run: |
+          ids=$(jq -cn --arg s "$VIDEO_IDS" '$s | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))')
+          jq -cn --argjson ids "$ids" '{videoIds: $ids, metadata: true}' > input.json
+          curl -sS --fail-with-body -X POST \
+            "https://api.apify.com/v2/acts/apihq~youtube-transcript-scraper/run-sync-get-dataset-items?clean=true" \
+            -H "Authorization: Bearer $APIFY_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data @input.json \
+            -o transcripts.json
+
+      - name: Summarize delivered vs failed
+        run: |
+          delivered=$(jq '[.[] | select(.success)] | length' transcripts.json)
+          failed=$(jq '[.[] | select(.success | not)] | length' transcripts.json)
+          {
+            echo "### Transcript batch"
+            echo ""
+            echo "| Delivered (billed) | Typed failures (\$0) |"
+            echo "| --- | --- |"
+            echo "| $delivered | $failed |"
+            echo ""
+            echo "Failure rows stay in the dataset with their \`code\` and \`request_id\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the dataset
+        uses: actions/upload-artifact@v4
+        with:
+          name: transcripts
+          path: transcripts.json

@@ -19,6 +19,9 @@ and the run keeps going.
 | [`make/youtube-transcripts.make.json`](make/youtube-transcripts.make.json) | Make | Video IDs → one bundle per video, transcript and failure rows on separate filtered routes |
 | [`make/play-reviews-monitor.make.json`](make/play-reviews-monitor.make.json) | Make | An app's newest Google Play reviews, one bundle per review (schedule the scenario for a daily snapshot) |
 | [`make/youtube-comments.make.json`](make/youtube-comments.make.json) | Make | One video → one bundle per comment (author, text, likes) |
+| [`github-actions/youtube-transcripts.yml`](github-actions/youtube-transcripts.yml) | GitHub Actions | Manual dispatch: video IDs in, dataset artifact + delivered/failed job summary out |
+| [`github-actions/play-reviews-history.yml`](github-actions/play-reviews-history.yml) | GitHub Actions | Daily git-scraping: an app's newest reviews committed to your repo as dated JSON — diffable history |
+| [`github-actions/youtube-comments.yml`](github-actions/youtube-comments.yml) | GitHub Actions | Manual dispatch: one video's comments as a dataset artifact |
 
 ## How to use (n8n)
 
@@ -49,6 +52,19 @@ and the run keeps going.
    inputs in the request body.
 4. Run once to check the routes, then set the scenario schedule if the
    job is recurring (the daily review snapshot, for example).
+
+## How to use (GitHub Actions)
+
+1. Copy a workflow file from `github-actions/` into your repository's
+   `.github/workflows/` directory.
+2. Add an `APIFY_TOKEN` repository secret (repo Settings → Secrets and
+   variables → Actions).
+3. For the reviews-history workflow, set `APP_ID` in the file's `env`
+   block; it commits dated snapshots to your repo, so it needs the
+   `contents: write` permission it already declares.
+4. Run from the Actions tab (workflow_dispatch), or let the schedule
+   fire. The job summary shows delivered vs failed counts; failure rows
+   are typed `success: false` records and cost $0.
 
 ## Billing
 

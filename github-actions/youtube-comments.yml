@@ -1,0 +1,48 @@
+# YouTube comments batch — apihq skeleton.
+# Copy into your repo's .github/workflows/ and add an APIFY_TOKEN secret.
+# A video with comments disabled returns a typed success:false row ($0)
+# instead of failing the job.
+name: youtube-comments
+
+on:
+  workflow_dispatch:
+    inputs:
+      video:
+        description: "YouTube video URL or 11-character ID"
+        required: true
+        default: "dQw4w9WgXcQ"
+      max_comments:
+        description: "Maximum comments to fetch"
+        required: false
+        default: "200"
+
+jobs:
+  comments:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch the comments
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          VIDEO: ${{ inputs.video }}
+          MAX_COMMENTS: ${{ inputs.max_comments }}
+        run: |
+          jq -cn --arg v "$VIDEO" --argjson max "$MAX_COMMENTS" \
+            '{videoUrls: [$v], maxComments: $max, sort: "top", includeReplies: false}' > input.json
+          curl -sS --fail-with-body -X POST \
+            "https://api.apify.com/v2/acts/apihq~youtube-comments-scraper/run-sync-get-dataset-items?clean=true" \
+            -H "Authorization: Bearer $APIFY_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data @input.json \
+            -o comments.json
+
+      - name: Summarize delivered vs failed
+        run: |
+          delivered=$(jq '[.[] | select(.success)] | length' comments.json)
+          failed=$(jq '[.[] | select(.success | not)] | length' comments.json)
+          echo "### Comments: $delivered delivered (billed), $failed failure rows (\$0)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the dataset
+        uses: actions/upload-artifact@v4
+        with:
+          name: comments
+          path: comments.json

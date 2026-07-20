@@ -1,0 +1,52 @@
+# Google Play reviews → git history — apihq skeleton (git-scraping).
+# Copy into your repo's .github/workflows/, add an APIFY_TOKEN secret,
+# and set APP_ID below. Every day the newest reviews land as a dated
+# JSON file committed to your repo — diffable history for free.
+name: play-reviews-history
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
+
+permissions:
+  contents: write
+
+env:
+  APP_ID: com.spotify.music
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch the newest reviews
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+        run: |
+          jq -cn --arg app "$APP_ID" \
+            '{appIds: [$app], maxReviews: 100, sort: "newest", country: "us", language: "en"}' > input.json
+          curl -sS --fail-with-body -X POST \
+            "https://api.apify.com/v2/acts/apihq~google-play-reviews-scraper/run-sync-get-dataset-items?clean=true" \
+            -H "Authorization: Bearer $APIFY_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data @input.json \
+            -o snapshot.json
+          mkdir -p "data/play-reviews/$APP_ID"
+          mv snapshot.json "data/play-reviews/$APP_ID/$(date -u +%F).json"
+
+      - name: Summarize
+        run: |
+          file="data/play-reviews/$APP_ID/$(date -u +%F).json"
+          delivered=$(jq '[.[] | select(.success)] | length' "$file")
+          failed=$(jq '[.[] | select(.success | not)] | length' "$file")
+          echo "### Play reviews snapshot: $delivered reviews (billed), $failed failure rows (\$0)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit the snapshot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/play-reviews
+          git diff --staged --quiet || git commit -m "data: play reviews snapshot $(date -u +%F)"
+          git push
