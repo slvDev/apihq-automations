@@ -1,5 +1,5 @@
 {
-  "name": "Google Play reviews monitor (apihq skeleton)",
+  "name": "Negative Play review alerts (apihq skeleton)",
   "nodes": [
     {
       "parameters": {
@@ -15,10 +15,7 @@
       "name": "Every day",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [
-        200,
-        300
-      ]
+      "position": [200, 300]
     },
     {
       "parameters": {
@@ -46,10 +43,7 @@
       "name": "Get new reviews",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        430,
-        300
-      ]
+      "position": [430, 300]
     },
     {
       "parameters": {
@@ -79,45 +73,81 @@
       "name": "Split by success",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [
-        650,
-        300
-      ]
+      "position": [650, 300]
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": [
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
             {
-              "id": "a0",
-              "name": "app_id",
-              "value": "={{ $json.app_id }}",
-              "type": "string"
-            },
-            {
-              "id": "a1",
-              "name": "score",
-              "value": "={{ $json.score }}",
-              "type": "number"
-            },
-            {
-              "id": "a2",
-              "name": "text",
-              "value": "={{ $json.text }}",
-              "type": "string"
+              "id": "low-score-check",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": 2,
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
             }
-          ]
+          ],
+          "combinator": "and"
         },
         "options": {}
       },
-      "id": "review-row",
-      "name": "Review row",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        880,
-        200
-      ]
+      "id": "only-negative",
+      "name": "Only 1-2 star reviews",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [880, 200]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Suppress already-alerted reviews (at-least-once, not exactly-once:\n// static data saves only when the whole execution succeeds, so a\n// failed run can repeat alerts, and the first scheduled run alerts\n// the current backlog). Static data persists only on an ACTIVE\n// workflow; manual test runs always alert. Swap this for a durable\n// store (DB/Sheets upsert on review_id) for stronger guarantees.\nconst memory = $getWorkflowStaticData('global');\nmemory.alertedReviewIds = memory.alertedReviewIds || [];\nconst fresh = [];\nfor (const item of $input.all()) {\n  const id = item.json.review_id;\n  if (!id || memory.alertedReviewIds.includes(id)) continue;\n  memory.alertedReviewIds.push(id);\n  fresh.push(item);\n}\n// n8n asks that static data stay small — keep the memory bounded.\nif (memory.alertedReviewIds.length > 2000) {\n  memory.alertedReviewIds = memory.alertedReviewIds.slice(-1000);\n}\nreturn fresh;"
+      },
+      "id": "new-reviews-only",
+      "name": "New reviews only",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1110, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_SLACK_INCOMING_WEBHOOK_URL",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: `${$json.score} star review on ${$json.app_id} (${$json.posted_at}):\\n${$json.text || '(rating only, no text)'}\\n${$json.url}` }) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 1100
+            }
+          }
+        }
+      },
+      "id": "slack-alert",
+      "name": "Slack alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 200],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
     },
     {
       "parameters": {
@@ -149,10 +179,7 @@
       "name": "Failure row",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [
-        880,
-        400
-      ]
+      "position": [880, 420]
     }
   ],
   "connections": {
@@ -182,7 +209,7 @@
       "main": [
         [
           {
-            "node": "Review row",
+            "node": "Only 1-2 star reviews",
             "type": "main",
             "index": 0
           }
@@ -190,6 +217,28 @@
         [
           {
             "node": "Failure row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only 1-2 star reviews": {
+      "main": [
+        [
+          {
+            "node": "New reviews only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New reviews only": {
+      "main": [
+        [
+          {
+            "node": "Slack alert",
             "type": "main",
             "index": 0
           }

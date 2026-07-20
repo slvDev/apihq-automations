@@ -97,6 +97,12 @@
               "name": "text",
               "value": "={{ $json.text }}",
               "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "like_count",
+              "value": "={{ $json.like_count }}",
+              "type": "string"
             }
           ]
         },
